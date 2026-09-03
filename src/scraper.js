@@ -129,87 +129,76 @@ export async function getStreamUrl(episodeUrl, streamType = 'sub') {
     const { data } = await client.get(episodeUrl);
     const $ = cheerio.load(data);
 
-    let serverBtn;
     let subtitleUrl = null;
+    let serverBtns = [];
 
     if (streamType === 'sub') {
-      const hsubBtn = $('.nv-server-grid[data-id="hsub"] .nv-server-btn.server-video').first();
+      const hsubBtns = $('.nv-server-grid[data-id="hsub"] .nv-server-btn.server-video').toArray();
+      const subBtns = $('.nv-server-grid[data-id="sub"] .nv-server-btn.server-video').toArray();
+      serverBtns = [...hsubBtns, ...subBtns];
 
-      if (hsubBtn.length > 0) {
-        serverBtn = hsubBtn;
-      } else {
-        const subBtn = $('.nv-server-grid[data-id="sub"] .nv-server-btn.server-video').first();
-        const subDataVideo = subBtn.attr('data-video') || '';
-
+      const firstSubBtn = subBtns[0];
+      if (firstSubBtn) {
+        const subDataVideo = $(firstSubBtn).attr('data-video') || '';
         try {
           const subParam = new URL(subDataVideo.startsWith('http') ? subDataVideo : 'https:' + subDataVideo).searchParams.get('sub');
-          if (subParam) {
-            subtitleUrl = subParam;
-          }
+          if (subParam) subtitleUrl = subParam;
         } catch (_) {}
-
-        serverBtn = subBtn;
       }
     } else {
-      serverBtn = $(`.nv-server-grid[data-id="${streamType}"] .nv-server-btn.server-video`).first();
+      serverBtns = $(`.nv-server-grid[data-id="${streamType}"] .nv-server-btn.server-video`).toArray();
     }
 
-    let iframeSrc = serverBtn.attr('data-video');
-
-    if (!iframeSrc) {
-      throw new Error('No server found');
+    if (serverBtns.length === 0) {
+      serverBtns = $('.nv-server-btn.server-video').toArray();
     }
 
-    if (!iframeSrc.startsWith('http')) {
-      iframeSrc = 'https:' + iframeSrc;
-    }
+    for (const btn of serverBtns) {
+      let iframeSrc = $(btn).attr('data-video');
+      if (!iframeSrc) continue;
+      if (!iframeSrc.startsWith('http')) iframeSrc = 'https:' + iframeSrc;
 
-    const iframeBaseUrl = iframeSrc.split('?')[0];
+      const iframeBaseUrl = iframeSrc.split('?')[0];
 
-    const iframeRes = await axios.get(iframeBaseUrl, {
-      headers: { Referer: 'https://anineko.to/' }
-    });
-
-    const iframeHtml = iframeRes.data;
-    const iframe$ = cheerio.load(iframeHtml);
-
-    let m3u8Url = null;
-
-    if (iframeBaseUrl.includes('bibiemb') || iframeBaseUrl.includes('playmogo') || iframeHtml.includes('m3u8')) {
       try {
+        const iframeRes = await axios.get(iframeBaseUrl, {
+          headers: { Referer: 'https://anineko.to/' },
+          timeout: 8000
+        });
+
+        const iframeHtml = iframeRes.data;
+
         let m3u8Matches = iframeHtml.match(/https?:\/\/[^"'\s>]+\.m3u8[^"'\s>]*/gi);
 
-        if (m3u8Matches && m3u8Matches.length > 0) {
-          m3u8Url = m3u8Matches[0];
-        } else {
+        if (!m3u8Matches || m3u8Matches.length === 0) {
           const unpacked = unpackDeanEdwards(iframeHtml);
           if (unpacked) {
             m3u8Matches = unpacked.match(/https?:\/\/[^"'\s>]+\.m3u8[^"'\s>]*/gi);
-            if (m3u8Matches && m3u8Matches.length > 0) {
-              m3u8Url = m3u8Matches[0];
-            }
           }
         }
 
-        if (m3u8Url) {
-          return { streamUrl: m3u8Url, subtitleUrl };
+        if (m3u8Matches && m3u8Matches.length > 0) {
+          return { streamUrl: m3u8Matches[0], subtitleUrl };
         }
-      } catch (iframeErr) {
-        console.error('Error fetching iframe for stream extraction:', iframeErr.message);
+
+        const iframe$ = cheerio.load(iframeHtml);
+        const videoSrc = iframe$('video source').attr('src') || iframe$('video').attr('src');
+        if (videoSrc) {
+          return { streamUrl: videoSrc, subtitleUrl };
+        }
+
+        if (iframeHtml.includes('m3u8') || iframeHtml.includes('source')) {
+          return { streamUrl: iframeBaseUrl, subtitleUrl };
+        }
+      } catch (_) {
+        continue;
       }
-
-      return { streamUrl: iframeBaseUrl, subtitleUrl };
     }
 
-    const videoSrc = iframe$('video source').attr('src') || iframe$('video').attr('src');
-    if (videoSrc) {
-      return { streamUrl: videoSrc, subtitleUrl };
-    }
-
-    throw new Error('No stream found on episode page');
+    return null;
   } catch (err) {
-    console.error('Error extracting stream URL:', err.message);
-    return { streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', subtitleUrl: null };
+    // Return null silently instead of crashing or throwing error if no stream is found
+    return null;
   }
 }
 

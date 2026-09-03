@@ -230,10 +230,15 @@ export async function startApp() {
     screen.render();
     updateLeftPane(currentSearchResults[0]);
   });
+  let detailsTimeout = null;
+
   animeList.on('select item', (item, index) => {
     const anime = currentSearchResults[index];
     if (anime) {
-      updateLeftPane(anime);
+      if (detailsTimeout) clearTimeout(detailsTimeout);
+      detailsTimeout = setTimeout(() => {
+        updateLeftPane(anime);
+      }, 400);
     }
   });
 
@@ -310,6 +315,21 @@ export async function startApp() {
 
       const streamType = text.includes('Dub') ? 'dub' : 'sub';
       const streamData = await getStreamUrl(selectedEpisodeItem.url, streamType);
+      
+      if (!streamData || !streamData.streamUrl) {
+        leftPane.setContent(`{red-fg}{bold}❌ Error: Stream not found.{/red-fg}{/bold}\n\nCould not extract stream URL for this episode. The server might be down or using an unsupported format.`);
+        screen.render();
+        
+        uiMode = 'episodes';
+        epList.setLabel(` Episodes for: ${selectedAnimeItem.title} (${currentEpisodes.length} Total) `);
+        const items = currentEpisodes.map((ep, i) => `[${i + 1}/${currentEpisodes.length}] ${ep.name}`);
+        items.push('🔙 Go Back to Search');
+        epList.setItems(items);
+        epList.focus();
+        screen.render();
+        return;
+      }
+
       currentStreamUrl = streamData.streamUrl;
       currentSubtitleUrl = streamData.subtitleUrl;
       currentResolutions = await getAvailableResolutions(currentStreamUrl);
