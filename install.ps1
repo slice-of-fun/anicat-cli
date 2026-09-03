@@ -35,11 +35,11 @@ Move-Item -Path $ExtractedFolder.FullName -Destination $InstallDir -Force
 
 Write-Progress -Activity "Installing Ani-Cat CLI" -Status "Installing dependencies (No Warnings)..." -PercentComplete 60
 Set-Location -Path $InstallDir
-# Use --silent and --no-fund to hide all warnings and output
-$null = npm install --silent --no-fund
+# Use npm.cmd instead of npm to bypass strict Windows execution policies on npm.ps1
+$null = npm.cmd install --silent --no-fund
 
 Write-Progress -Activity "Installing Ani-Cat CLI" -Status "Linking global command..." -PercentComplete 90
-$null = npm link --silent
+$null = npm.cmd link --silent
 
 Write-Progress -Activity "Installing Ani-Cat CLI" -Status "Cleaning up..." -PercentComplete 100
 Remove-Item -Path $ZipPath -Force
