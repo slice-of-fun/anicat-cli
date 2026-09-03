@@ -26,8 +26,11 @@ export async function playStream(streamUrl, title, resolution = 'Auto', subtitle
     `--force-media-title=${title}`,
     '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     '--referrer=https://anineko.to/',
-    '--demuxer-max-bytes=150M',
-    '--demuxer-max-back-bytes=50M'
+    '--demuxer-max-bytes=500M',
+    '--demuxer-max-back-bytes=200M',
+    '--cache=yes',
+    '--cache-secs=120',
+    '--hls-bitrate=max'
   ];
 
   if (resolution !== 'Auto') {
@@ -38,6 +41,7 @@ export async function playStream(streamUrl, title, resolution = 'Auto', subtitle
 
   if (localSubPath) {
     mpvArgs.push(`--sub-file=${localSubPath}`);
+    mpvArgs.push(`--sub-delay=1.0`);
   }
 
   const player = spawn('mpv', mpvArgs, {
@@ -57,7 +61,15 @@ export async function playStream(streamUrl, title, resolution = 'Auto', subtitle
         }
       }
 
-      const vlcArgs = [streamUrl, '--meta-title', title];
+      const vlcArgs = [
+        streamUrl,
+        '--meta-title', title,
+        '--http-referrer=https://anineko.to/',
+        '--http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        '--network-caching=10000',
+        '--live-caching=10000',
+        '--file-caching=10000'
+      ];
       if (resolution !== 'Auto') {
         const resValue = resolution.replace('p', '');
         vlcArgs.push(`--preferred-resolution=${resValue}`);
@@ -65,6 +77,7 @@ export async function playStream(streamUrl, title, resolution = 'Auto', subtitle
 
       if (localSubPath) {
         vlcArgs.push(`--sub-file=${localSubPath}`);
+        vlcArgs.push(`--sub-delay=10`);
       }
 
       const vlcPlayer = spawn(vlcCommand, vlcArgs, { stdio: 'inherit' });

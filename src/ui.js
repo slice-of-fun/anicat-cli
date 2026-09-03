@@ -228,6 +228,7 @@ export async function startApp() {
     animeList.focus();
     animeList.select(0);
     screen.render();
+    updateLeftPane(currentSearchResults[0]);
   });
   animeList.on('select item', (item, index) => {
     const anime = currentSearchResults[index];

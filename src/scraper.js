@@ -130,10 +130,25 @@ export async function getStreamUrl(episodeUrl, streamType = 'sub') {
     const $ = cheerio.load(data);
 
     let serverBtn;
+    let subtitleUrl = null;
+
     if (streamType === 'sub') {
-      serverBtn = $('.nv-server-grid[data-id="hsub"] .nv-server-btn.server-video').first();
-      if (serverBtn.length === 0) {
-        serverBtn = $('.nv-server-grid[data-id="sub"] .nv-server-btn.server-video').first();
+      const hsubBtn = $('.nv-server-grid[data-id="hsub"] .nv-server-btn.server-video').first();
+
+      if (hsubBtn.length > 0) {
+        serverBtn = hsubBtn;
+      } else {
+        const subBtn = $('.nv-server-grid[data-id="sub"] .nv-server-btn.server-video').first();
+        const subDataVideo = subBtn.attr('data-video') || '';
+
+        try {
+          const subParam = new URL(subDataVideo.startsWith('http') ? subDataVideo : 'https:' + subDataVideo).searchParams.get('sub');
+          if (subParam) {
+            subtitleUrl = subParam;
+          }
+        } catch (_) {}
+
+        serverBtn = subBtn;
       }
     } else {
       serverBtn = $(`.nv-server-grid[data-id="${streamType}"] .nv-server-btn.server-video`).first();
@@ -149,7 +164,9 @@ export async function getStreamUrl(episodeUrl, streamType = 'sub') {
       iframeSrc = 'https:' + iframeSrc;
     }
 
-    const iframeRes = await axios.get(iframeSrc, {
+    const iframeBaseUrl = iframeSrc.split('?')[0];
+
+    const iframeRes = await axios.get(iframeBaseUrl, {
       headers: { Referer: 'https://anineko.to/' }
     });
 
@@ -158,7 +175,7 @@ export async function getStreamUrl(episodeUrl, streamType = 'sub') {
 
     let m3u8Url = null;
 
-    if (iframeSrc.includes('bibiemb') || iframeSrc.includes('playmogo') || iframeHtml.includes('m3u8')) {
+    if (iframeBaseUrl.includes('bibiemb') || iframeBaseUrl.includes('playmogo') || iframeHtml.includes('m3u8')) {
       try {
         let m3u8Matches = iframeHtml.match(/https?:\/\/[^"'\s>]+\.m3u8[^"'\s>]*/gi);
 
@@ -175,18 +192,18 @@ export async function getStreamUrl(episodeUrl, streamType = 'sub') {
         }
 
         if (m3u8Url) {
-          return { streamUrl: m3u8Url, subtitleUrl: null };
+          return { streamUrl: m3u8Url, subtitleUrl };
         }
       } catch (iframeErr) {
         console.error('Error fetching iframe for stream extraction:', iframeErr.message);
       }
 
-      return { streamUrl: iframeSrc, subtitleUrl: null };
+      return { streamUrl: iframeBaseUrl, subtitleUrl };
     }
 
     const videoSrc = iframe$('video source').attr('src') || iframe$('video').attr('src');
     if (videoSrc) {
-      return { streamUrl: videoSrc, subtitleUrl: null };
+      return { streamUrl: videoSrc, subtitleUrl };
     }
 
     throw new Error('No stream found on episode page');
