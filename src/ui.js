@@ -193,8 +193,6 @@ export async function startApp() {
     }
     screen.render();
   }
-
-  // Search input handler
   searchInput.on('submit', async (value) => {
     if (!value.trim()) return;
     uiMode = 'search';
@@ -218,8 +216,6 @@ export async function startApp() {
     animeList.select(0);
     screen.render();
   });
-
-  // Arrow navigation on search results -> dynamically update left pane cover & info
   animeList.on('select item', (item, index) => {
     const anime = currentSearchResults[index];
     if (anime) {
@@ -244,7 +240,6 @@ export async function startApp() {
     const subCount = parseInt(anime.sub) || 0;
     const dubCount = parseInt(anime.dub) || 0;
 
-    // Check if sub/dub is available for this episode index (1-based)
     const epNumber = index + 1;
 
     if (subCount >= epNumber || anime.sub === '?') options.push(`📺 Watch Sub`);
@@ -331,8 +326,6 @@ export async function startApp() {
       }, 1200);
     }
   });
-
-  // Global Key Bindings
   screen.key(['escape', 'q', 'C-c'], () => process.exit(0));
   screen.key(['s', 'S'], () => searchInput.focus());
   screen.key(['tab'], () => {

@@ -101,8 +101,6 @@ export async function getEpisodes(animeUrl) {
     const $ = cheerio.load(data);
     const episodes = [];
 
-    // Assuming episodes are listed as links with class like .ep-item or inside a list
-    // This selector might need to be adjusted based on actual episode page structure
     $('a[href*="/episode/"], .ep-list a, .episode-item a').each((_, el) => {
       const name = $(el).text().trim() || `Episode ${episodes.length + 1}`;
       const href = $(el).attr('href');
@@ -115,7 +113,6 @@ export async function getEpisodes(animeUrl) {
       }
     });
 
-    // Fallback if no specific episode links found but we are on a watch page
     if (episodes.length === 0) {
       episodes.push({ name: 'Watch', url: animeUrl });
     }
@@ -179,7 +176,6 @@ export async function getStreamUrl(episodeUrl, streamType = 'sub') {
     throw new Error('No stream found on episode page');
   } catch (err) {
     console.error('Error extracting stream URL:', err.message);
-    // Returning a fallback HLS stream for testing if stream extraction fails
     return 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
   }
 }

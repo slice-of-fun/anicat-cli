@@ -66,15 +66,12 @@ export async function fetchAnimeDetails(title) {
     genres: []
   };
 
-  // 1. Try exact title on Anilist
   let details = await fetchFromAnilist(title);
   if (details) return details;
 
-  // 2. Try exact title on Jikan
   details = await fetchFromJikan(title);
   if (details) return details;
 
-  // 3. Clean the title and try again (stripping "Season 2", "Specials", etc.)
   const cleanedTitle = cleanTitleForSearch(title);
   if (cleanedTitle && cleanedTitle !== title && cleanedTitle.length > 2) {
     details = await fetchFromAnilist(cleanedTitle);
@@ -82,8 +79,6 @@ export async function fetchAnimeDetails(title) {
 
     details = await fetchFromJikan(cleanedTitle);
     if (details) return details;
-    
-    // 4. Absolute fallback: Just use the first 3-4 words of the cleaned title
     const shortTitle = cleanedTitle.split(' ').slice(0, 4).join(' ');
     if (shortTitle.length > 2) {
       details = await fetchFromAnilist(shortTitle);
