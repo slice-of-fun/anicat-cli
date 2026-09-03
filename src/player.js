@@ -68,7 +68,8 @@ export async function playStream(streamUrl, title, resolution = 'Auto', subtitle
         '--http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         '--network-caching=10000',
         '--live-caching=10000',
-        '--file-caching=10000'
+        '--file-caching=10000',
+        '--http-reconnect'
       ];
       if (resolution !== 'Auto') {
         const resValue = resolution.replace('p', '');

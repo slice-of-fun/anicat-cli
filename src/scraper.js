@@ -132,19 +132,19 @@ export async function getStreamUrl(episodeUrl, streamType = 'sub') {
     let subtitleUrl = null;
     let serverBtns = [];
 
+    const subBtns = $('.nv-server-grid[data-id="sub"] .nv-server-btn.server-video').toArray();
+    const firstSubBtn = subBtns[0];
+    if (firstSubBtn) {
+      const subDataVideo = $(firstSubBtn).attr('data-video') || '';
+      try {
+        const subParam = new URL(subDataVideo.startsWith('http') ? subDataVideo : 'https:' + subDataVideo).searchParams.get('sub');
+        if (subParam) subtitleUrl = subParam;
+      } catch (_) { }
+    }
+
     if (streamType === 'sub') {
       const hsubBtns = $('.nv-server-grid[data-id="hsub"] .nv-server-btn.server-video').toArray();
-      const subBtns = $('.nv-server-grid[data-id="sub"] .nv-server-btn.server-video').toArray();
       serverBtns = [...hsubBtns, ...subBtns];
-
-      const firstSubBtn = subBtns[0];
-      if (firstSubBtn) {
-        const subDataVideo = $(firstSubBtn).attr('data-video') || '';
-        try {
-          const subParam = new URL(subDataVideo.startsWith('http') ? subDataVideo : 'https:' + subDataVideo).searchParams.get('sub');
-          if (subParam) subtitleUrl = subParam;
-        } catch (_) {}
-      }
     } else {
       serverBtns = $(`.nv-server-grid[data-id="${streamType}"] .nv-server-btn.server-video`).toArray();
     }
@@ -197,7 +197,6 @@ export async function getStreamUrl(episodeUrl, streamType = 'sub') {
 
     return null;
   } catch (err) {
-    // Return null silently instead of crashing or throwing error if no stream is found
     return null;
   }
 }
