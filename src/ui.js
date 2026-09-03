@@ -365,12 +365,10 @@ export async function startApp() {
 
       screen.leave();
       const exactStreamUrl = await getExactResolutionUrl(currentStreamUrl, resolution);
-      playStream(exactStreamUrl, `${selectedAnimeItem.title} - ${selectedEpisodeItem.name} [${resolution}]`, resolution, currentSubtitleUrl);
+      await playStream(exactStreamUrl, `${selectedAnimeItem.title} - ${selectedEpisodeItem.name} [${resolution}]`, resolution, currentSubtitleUrl);
 
-      setTimeout(() => {
-        screen.enter();
-        screen.render();
-      }, 1200);
+      screen.enter();
+      screen.render();
     }
   });
   screen.key(['escape', 'q', 'C-c'], () => process.exit(0));
