@@ -1,7 +1,10 @@
 $ErrorActionPreference = "Stop"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+chcp 65001 | Out-Null
 
 if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ Error: npm is required but not installed. Please install Node.js." -ForegroundColor Red
+    Write-Host "Ã¢ÂÅ’ Error: npm is required but not installed. Please install Node.js." -ForegroundColor Red
     exit 1
 }
 
@@ -12,8 +15,14 @@ $ZipPath = Join-Path $env:TEMP "anicat.zip"
 $ExtractPath = Join-Path $env:TEMP "anicat-extract"
 
 Write-Host ""
-Write-Host "🐱 Ani-Cat CLI Installer" -ForegroundColor Cyan
-Write-Host "=========================" -ForegroundColor Cyan
+Write-Host "   /\___/\             " -NoNewline -ForegroundColor Yellow
+Write-Host "  ▶  ANI-CAT CLI" -ForegroundColor Cyan
+Write-Host "  ( o^..^o )           " -NoNewline -ForegroundColor Yellow
+Write-Host "  ══════════════════════════════" -ForegroundColor DarkCyan
+Write-Host "  (  (__)   )          " -NoNewline -ForegroundColor Yellow
+Write-Host "  Stream anime from your terminal!" -ForegroundColor White
+Write-Host "  ) ~~~~~~ (           " -NoNewline -ForegroundColor Yellow
+Write-Host "  '--------'           " -NoNewline -ForegroundColor Yellow
 Write-Host ""
 
 Write-Progress -Activity "Installing Ani-Cat CLI" -Status "Downloading source code..." -PercentComplete 10
@@ -43,6 +52,6 @@ Remove-Item -Path $ZipPath -Force
 Remove-Item -Path $ExtractPath -Recurse -Force
 
 Write-Host ""
-Write-Host "✅ anicat-cli installed successfully!" -ForegroundColor Green
-Write-Host "🎮 Run 'anicat-cli' from your terminal to start streaming!" -ForegroundColor Green
+Write-Host "Ã¢Å“â€¦ anicat-cli installed successfully!" -ForegroundColor Green
+Write-Host "Ã°Å¸Å½Â® Run 'anicat-cli' from your terminal to start streaming!" -ForegroundColor Green
 Write-Host ""

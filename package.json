@@ -1,6 +1,7 @@
 {
   "name": "anicat-cli",
   "version": "1.0.0",
+  "private": true,
   "description": "A cute CLI anime streaming application with official poster rendering",
   "main": "index.js",
   "type": "module",

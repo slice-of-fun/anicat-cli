@@ -7,10 +7,13 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${CYAN}"
-echo "🐱 Ani-Cat CLI Installer"
-echo "========================="
-echo -e "${NC}"
+echo ""
+echo -e "${YELLOW}   /\\___/\\            ${CYAN}  ▶  ANI-CAT CLI${NC}"
+echo -e "${YELLOW}  ( o^..^o )          ${CYAN}  ══════════════════════════════${NC}"
+echo -e "${YELLOW}  (  (__)   )         ${NC}  Stream anime from your terminal!"
+echo -e "${YELLOW}  ) ~~~~~~ (          ${NC}"
+echo -e "${YELLOW}  '--------'${NC}"
+echo ""
 
 if ! command -v npm &> /dev/null; then
     echo -e "${RED}❌ Error: npm is required but not installed. Please install Node.js.${NC}"
