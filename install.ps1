@@ -3,46 +3,49 @@ $ErrorActionPreference = "Stop"
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host " 🐱 Installing Ani-Cat CLI..." -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
-
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     Write-Host "❌ Error: npm is required but not installed. Please install Node.js." -ForegroundColor Red
     exit 1
 }
 
-$InstallDir = Join-Path $env:USERPROFILE ".ani-cat"
+$ProgressPreference = 'SilentlyContinue'
+$InstallDir = Join-Path $HOME ".ani-cat"
+$ZipUrl = "https://github.com/slice-of-fun/anicat-cli/archive/refs/heads/main.zip"
+$ZipPath = Join-Path $env:TEMP "anicat.zip"
+$ExtractPath = Join-Path $env:TEMP "anicat-extract"
 
-$ZipPath = Join-Path $env:TEMP "ani-cat.zip"
-$ExtractPath = Join-Path $env:TEMP "ani-cat-extract"
+Write-Host ""
+Write-Host "🐱 Ani-Cat CLI Installer" -ForegroundColor Cyan
+Write-Host "=========================" -ForegroundColor Cyan
+Write-Host ""
 
-Write-Host "📥 Downloading latest release..." -ForegroundColor Yellow
-Invoke-WebRequest -Uri "https://github.com/slice-of-fun/anicat-cli/archive/refs/heads/main.zip" -OutFile $ZipPath
+Write-Progress -Activity "Installing Ani-Cat CLI" -Status "Downloading source code..." -PercentComplete 10
+Invoke-WebRequest -Uri $ZipUrl -OutFile $ZipPath -UseBasicParsing
 
-if (Test-Path $InstallDir) {
-    Write-Host "🔄 Removing old installation..." -ForegroundColor Yellow
-    Remove-Item -Recurse -Force $InstallDir
-}
-
-Write-Host "📂 Extracting files..." -ForegroundColor Yellow
-if (Test-Path $ExtractPath) { Remove-Item -Recurse -Force $ExtractPath }
-New-Item -ItemType Directory -Path $ExtractPath | Out-Null
+Write-Progress -Activity "Installing Ani-Cat CLI" -Status "Extracting files..." -PercentComplete 30
+if (Test-Path $ExtractPath) { Remove-Item -Path $ExtractPath -Recurse -Force }
 Expand-Archive -Path $ZipPath -DestinationPath $ExtractPath -Force
 
-# Move the inner folder (ani-cat-main) to $InstallDir
+if (Test-Path $InstallDir) {
+    Remove-Item -Path $InstallDir -Recurse -Force
+}
+
 $ExtractedFolder = Get-ChildItem -Path $ExtractPath -Directory | Select-Object -First 1
 Move-Item -Path $ExtractedFolder.FullName -Destination $InstallDir -Force
 
-# Cleanup
-Remove-Item -Force $ZipPath
-Remove-Item -Recurse -Force $ExtractPath
+Write-Progress -Activity "Installing Ani-Cat CLI" -Status "Installing dependencies (No Warnings)..." -PercentComplete 60
+Set-Location -Path $InstallDir
+# Use --silent and --no-fund to hide all warnings and output
+$null = npm install --silent --no-fund
 
-Set-Location $InstallDir
+Write-Progress -Activity "Installing Ani-Cat CLI" -Status "Linking global command..." -PercentComplete 90
+$null = npm link --silent
 
-Write-Host "📦 Installing dependencies..." -ForegroundColor Yellow
-npm install blessed cheerio axios terminal-image sharp got
-
-Write-Host "🔗 Linking executable to global path..." -ForegroundColor Yellow
-npm link
+Write-Progress -Activity "Installing Ani-Cat CLI" -Status "Cleaning up..." -PercentComplete 100
+Remove-Item -Path $ZipPath -Force
+Remove-Item -Path $ExtractPath -Recurse -Force
 
 Write-Host ""
 Write-Host "✅ anicat-cli installed successfully!" -ForegroundColor Green
 Write-Host "🎮 Run 'anicat-cli' from your terminal to start streaming!" -ForegroundColor Green
+Write-Host ""
