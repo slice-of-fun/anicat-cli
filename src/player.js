@@ -1,9 +1,26 @@
 import { spawn } from 'child_process';
 import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import axios from 'axios';
 
-export function playStream(streamUrl, title, resolution = 'Auto') {
+export async function playStream(streamUrl, title, resolution = 'Auto', subtitleUrl = null) {
   console.log(`\n▶️ Starting playback for: ${title} [${resolution}]`);
-  console.log(`Stream URL: ${streamUrl}\n`);
+  console.log(`Stream URL: ${streamUrl}`);
+
+  let localSubPath = null;
+  if (subtitleUrl && subtitleUrl.startsWith('http')) {
+    try {
+      console.log(`⬇️ Downloading subtitles...`);
+      const { data } = await axios.get(subtitleUrl);
+      localSubPath = path.join(os.tmpdir(), 'anicat_sub.vtt');
+      fs.writeFileSync(localSubPath, data);
+      console.log(`✅ Subtitles loaded!`);
+    } catch (e) {
+      console.log(`⚠️ Failed to download subtitles: ${e.message}`);
+    }
+  }
+
   const mpvArgs = [
     streamUrl,
     `--force-media-title=${title}`,
@@ -17,6 +34,10 @@ export function playStream(streamUrl, title, resolution = 'Auto') {
     const resValue = resolution.replace('p', '');
     mpvArgs.push(`--ytdl-format=bestvideo[height<=${resValue}]+bestaudio/best`);
     mpvArgs.push(`--hls-bitrate=max`);
+  }
+
+  if (localSubPath) {
+    mpvArgs.push(`--sub-file=${localSubPath}`);
   }
 
   const player = spawn('mpv', mpvArgs, {
@@ -40,6 +61,10 @@ export function playStream(streamUrl, title, resolution = 'Auto') {
       if (resolution !== 'Auto') {
         const resValue = resolution.replace('p', '');
         vlcArgs.push(`--preferred-resolution=${resValue}`);
+      }
+
+      if (localSubPath) {
+        vlcArgs.push(`--sub-file=${localSubPath}`);
       }
 
       const vlcPlayer = spawn(vlcCommand, vlcArgs, { stdio: 'inherit' });

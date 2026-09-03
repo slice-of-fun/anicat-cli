@@ -71,7 +71,7 @@ export async function startApp() {
     top: 3,
     left: 0,
     width: '100%-2',
-    height: '48%-2',
+    height: '100%-5',
     label: ' Search Results (Press Enter to select) ',
     border: { type: 'line' },
     keys: true,
@@ -86,15 +86,16 @@ export async function startApp() {
   });
   const epList = blessed.list({
     parent: rightPane,
-    top: '48%+1',
+    top: 3,
     left: 0,
     width: '100%-2',
-    height: '52%-2',
+    height: '100%-5',
     label: ' Episodes (Press Enter to Play) ',
     border: { type: 'line' },
     keys: true,
     vi: true,
     mouse: true,
+    hidden: true,
     style: {
       border: { fg: 'orange' },
       selected: { bg: 'orange', fg: 'black', bold: true },
@@ -113,6 +114,7 @@ export async function startApp() {
   let selectedEpisodeItem = null;
   let selectedEpisodeIndex = 0;
   let currentStreamUrl = null;
+  let currentSubtitleUrl = null;
   let currentResolutions = [];
   let uiMode = 'search';
 
@@ -164,6 +166,8 @@ export async function startApp() {
 
     epList.setLabel(` Episodes for: ${anime.title} (Fetching...) `);
     epList.setItems(['Loading episode list...']);
+    animeList.hide();
+    epList.show();
     screen.render();
 
     const subCount = parseInt(anime.sub) || 0;
@@ -184,22 +188,31 @@ export async function startApp() {
 
     if (currentEpisodes.length === 0) {
       epList.setLabel(` Episodes for: ${anime.title} (0 Episodes) `);
-      epList.setItems(['No episodes available.']);
+      epList.setItems(['No episodes available.', '🔙 Go Back to Search']);
     } else {
       epList.setLabel(` Episodes for: ${anime.title} (${currentEpisodes.length} Total) `);
-      epList.setItems(currentEpisodes.map((ep, i) => `[${i + 1}/${currentEpisodes.length}] ${ep.name}`));
+      const items = currentEpisodes.map((ep, i) => `[${i + 1}/${currentEpisodes.length}] ${ep.name}`);
+      items.push('🔙 Go Back to Search');
+      epList.setItems(items);
       epList.focus();
       epList.select(0);
     }
     screen.render();
   }
   searchInput.on('submit', async (value) => {
-    if (!value.trim()) return;
+    if (!value.trim()) {
+      searchInput.clearValue();
+      screen.render();
+      return;
+    }
     uiMode = 'search';
     leftPane.setContent('{yellow-fg}Searching...{/yellow-fg}');
     animeList.setItems(['Searching...']);
     epList.setItems([]);
     epList.setLabel(' Episodes ');
+    epList.hide();
+    animeList.show();
+    searchInput.clearValue();
     screen.render();
 
     currentSearchResults = await searchAnime(value);
@@ -259,6 +272,15 @@ export async function startApp() {
 
   epList.on('select', async (item, index) => {
     if (uiMode === 'episodes') {
+      const text = epList.items[index].getText();
+      if (text.includes('Go Back to Search')) {
+        uiMode = 'search';
+        epList.hide();
+        animeList.show();
+        animeList.focus();
+        screen.render();
+        return;
+      }
       const ep = currentEpisodes[index];
       if (ep) {
         showLanguageSelectionForEpisode(selectedAnimeItem, ep, index);
@@ -272,7 +294,9 @@ export async function startApp() {
       if (text.includes('Go Back')) {
         uiMode = 'episodes';
         epList.setLabel(` Episodes for: ${selectedAnimeItem.title} (${currentEpisodes.length} Total) `);
-        epList.setItems(currentEpisodes.map((ep, i) => `[${i + 1}/${currentEpisodes.length}] ${ep.name}`));
+        const items = currentEpisodes.map((ep, i) => `[${i + 1}/${currentEpisodes.length}] ${ep.name}`);
+        items.push('🔙 Go Back to Search');
+        epList.setItems(items);
         epList.focus();
         screen.render();
         return;
@@ -284,7 +308,9 @@ export async function startApp() {
       screen.render();
 
       const streamType = text.includes('Dub') ? 'dub' : 'sub';
-      currentStreamUrl = await getStreamUrl(selectedEpisodeItem.url, streamType);
+      const streamData = await getStreamUrl(selectedEpisodeItem.url, streamType);
+      currentStreamUrl = streamData.streamUrl;
+      currentSubtitleUrl = streamData.subtitleUrl;
       currentResolutions = await getAvailableResolutions(currentStreamUrl);
 
       uiMode = 'resolution';
@@ -318,7 +344,7 @@ export async function startApp() {
 
       screen.leave();
       const exactStreamUrl = await getExactResolutionUrl(currentStreamUrl, resolution);
-      playStream(exactStreamUrl, `${selectedAnimeItem.title} - ${selectedEpisodeItem.name} [${resolution}]`, resolution);
+      playStream(exactStreamUrl, `${selectedAnimeItem.title} - ${selectedEpisodeItem.name} [${resolution}]`, resolution, currentSubtitleUrl);
 
       setTimeout(() => {
         screen.enter();
@@ -327,7 +353,11 @@ export async function startApp() {
     }
   });
   screen.key(['escape', 'q', 'C-c'], () => process.exit(0));
-  screen.key(['s', 'S'], () => searchInput.focus());
+  screen.key(['s', 'S'], () => {
+    searchInput.clearValue();
+    searchInput.focus();
+    screen.render();
+  });
   screen.key(['tab'], () => {
     if (screen.focused === searchInput) animeList.focus();
     else if (screen.focused === animeList) epList.focus();

@@ -101,7 +101,7 @@ export async function getEpisodes(animeUrl) {
     const $ = cheerio.load(data);
     const episodes = [];
 
-    $('a[href*="/episode/"], .ep-list a, .episode-item a').each((_, el) => {
+    $('a[href*="/episode/"], a[href*="/ep-"], .ep-list a, .episode-item a, .nv-info-episode-main').each((_, el) => {
       const name = $(el).text().trim() || `Episode ${episodes.length + 1}`;
       const href = $(el).attr('href');
 
@@ -129,21 +129,37 @@ export async function getStreamUrl(episodeUrl, streamType = 'sub') {
     const { data } = await client.get(episodeUrl);
     const $ = cheerio.load(data);
 
-    let iframeSrc = $(`.nv-server-grid[data-id="${streamType}"] .nv-server-btn.server-video`).attr('data-video');
-    if (!iframeSrc) iframeSrc = $('.nv-server-btn.server-video').attr('data-video');
-    if (!iframeSrc) iframeSrc = $('iframe').attr('src');
-    if (iframeSrc) {
-      iframeSrc = iframeSrc.startsWith('http') ? iframeSrc : `https:${iframeSrc}`;
+    let serverBtn;
+    if (streamType === 'sub') {
+      serverBtn = $('.nv-server-grid[data-id="hsub"] .nv-server-btn.server-video').first();
+      if (serverBtn.length === 0) {
+        serverBtn = $('.nv-server-grid[data-id="sub"] .nv-server-btn.server-video').first();
+      }
+    } else {
+      serverBtn = $(`.nv-server-grid[data-id="${streamType}"] .nv-server-btn.server-video`).first();
+    }
 
+    let iframeSrc = serverBtn.attr('data-video');
+
+    if (!iframeSrc) {
+      throw new Error('No server found');
+    }
+
+    if (!iframeSrc.startsWith('http')) {
+      iframeSrc = 'https:' + iframeSrc;
+    }
+
+    const iframeRes = await axios.get(iframeSrc, {
+      headers: { Referer: 'https://anineko.to/' }
+    });
+
+    const iframeHtml = iframeRes.data;
+    const iframe$ = cheerio.load(iframeHtml);
+
+    let m3u8Url = null;
+
+    if (iframeSrc.includes('bibiemb') || iframeSrc.includes('playmogo') || iframeHtml.includes('m3u8')) {
       try {
-        const iframeRes = await client.get(iframeSrc, {
-          headers: {
-            'Referer': episodeUrl
-          }
-        });
-        const iframeHtml = iframeRes.data;
-
-        let m3u8Url = null;
         let m3u8Matches = iframeHtml.match(/https?:\/\/[^"'\s>]+\.m3u8[^"'\s>]*/gi);
 
         if (m3u8Matches && m3u8Matches.length > 0) {
@@ -159,24 +175,24 @@ export async function getStreamUrl(episodeUrl, streamType = 'sub') {
         }
 
         if (m3u8Url) {
-          return m3u8Url;
+          return { streamUrl: m3u8Url, subtitleUrl: null };
         }
       } catch (iframeErr) {
         console.error('Error fetching iframe for stream extraction:', iframeErr.message);
       }
 
-      return iframeSrc;
+      return { streamUrl: iframeSrc, subtitleUrl: null };
     }
 
-    const videoSrc = $('video source').attr('src') || $('video').attr('src');
+    const videoSrc = iframe$('video source').attr('src') || iframe$('video').attr('src');
     if (videoSrc) {
-      return videoSrc;
+      return { streamUrl: videoSrc, subtitleUrl: null };
     }
 
     throw new Error('No stream found on episode page');
   } catch (err) {
     console.error('Error extracting stream URL:', err.message);
-    return 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+    return { streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', subtitleUrl: null };
   }
 }
 
