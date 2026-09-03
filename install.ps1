@@ -1,9 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " 🐱 Installing Ani-Cat CLI..." -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
-if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) {
     Write-Host "❌ Error: npm is required but not installed. Please install Node.js." -ForegroundColor Red
     exit 1
 }
