@@ -217,8 +217,9 @@ export async function startApp() {
 
     currentSearchResults = await searchAnime(value);
     if (currentSearchResults.length === 0) {
-      animeList.setItems(['No results found.']);
+      animeList.setItems(['No results found. Press "s" to search again.']);
       leftPane.setContent('{red-fg}No anime found.{/red-fg}');
+      animeList.focus();
       screen.render();
       return;
     }
@@ -374,7 +375,7 @@ export async function startApp() {
   screen.key(['escape', 'q', 'C-c'], () => process.exit(0));
   screen.key(['s', 'S'], () => {
     searchInput.clearValue();
-    searchInput.focus();
+    searchInput.readInput();
     screen.render();
   });
   screen.key(['tab'], () => {
