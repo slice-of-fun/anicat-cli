@@ -26,11 +26,15 @@ export async function playStream(streamUrl, title, resolution = 'Auto', subtitle
     `--force-media-title=${title}`,
     '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     '--referrer=https://anineko.to/',
-    '--demuxer-max-bytes=500M',
-    '--demuxer-max-back-bytes=200M',
+    '--demuxer-max-bytes=1000M',
+    '--demuxer-max-back-bytes=500M',
     '--cache=yes',
-    '--cache-secs=120',
-    '--hls-bitrate=max'
+    '--cache-secs=300',
+    '--force-seekable=yes',
+    '--hr-seek=yes',
+    '--hr-seek-framedrop=yes',
+    '--hls-bitrate=max',
+    '--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=5'
   ];
 
   if (resolution !== 'Auto') {
@@ -66,12 +70,13 @@ export async function playStream(streamUrl, title, resolution = 'Auto', subtitle
         '--meta-title', title,
         '--http-referrer=https://anineko.to/',
         '--http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        '--network-caching=30000',
-        '--live-caching=30000',
-        '--file-caching=30000',
-        '--tcp-caching=30000',
+        '--network-caching=60000',
+        '--live-caching=60000',
+        '--file-caching=60000',
+        '--tcp-caching=60000',
         '--http-reconnect',
-        '--http-continuous'
+        '--http-continuous',
+        '--repeat'
       ];
       if (resolution !== 'Auto') {
         const resValue = resolution.replace('p', '');
